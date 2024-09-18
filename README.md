@@ -1,1 +1,1 @@
-# ChillChat2-Server
+# Pet проектик с чатиком
