@@ -1,11 +1,13 @@
-import { Body, Controller, Get, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { Controller, Get, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
 import { MessageService } from './message.service';
-import { CreateMessageDto, Message, MessageMarker, MessagePage } from './types';
+import { Message, MessageMarker, MessagePage } from './types';
+import { JwtGuard } from 'src/auth/jwt.guard';
 
 @Controller('message')
 export class MessageController {
     constructor(private msgService: MessageService) {}
 
+    @UseGuards(JwtGuard)
     @Get('create')
     async create(
         @Query('text')
@@ -18,6 +20,7 @@ export class MessageController {
         });
     }
 
+    @UseGuards(JwtGuard)
     @Get('getPage')
     async getPage(
         @Query('marker', new ParseIntPipe({optional: true}))
