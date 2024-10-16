@@ -4,6 +4,8 @@ import { AuthModule } from './auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserDAO } from './user/user.entity';
 import { ArticleModule } from './article/article.module';
+import { RefreshTokenDAO } from './auth/refreshToken.entity';
+import { ArticleDAO } from './article/article.entity';
 
 @Module({
   imports: [
@@ -12,7 +14,7 @@ import { ArticleModule } from './article/article.module';
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'testdb.sqlite',
-      entities: [UserDAO],
+      entities: [UserDAO, RefreshTokenDAO, ArticleDAO],
       synchronize: true
     }),
     ArticleModule

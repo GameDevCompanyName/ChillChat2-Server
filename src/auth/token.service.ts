@@ -7,7 +7,7 @@ import { Repository } from "typeorm";
 
 @Injectable()
 export class TokenService {
-    
+
     constructor(
         @InjectRepository(RefreshTokenDAO)
         private repository: Repository<RefreshTokenDAO>
@@ -16,11 +16,11 @@ export class TokenService {
     public async createToken(userId: UserId): Promise<RefreshTokenDAO> {
         this.forget(userId);
         const newToken = this.generateToken(userId);
-        let dao: RefreshTokenDAO = {
+        const newDao: Partial<RefreshTokenDAO> = {
             refreshToken: newToken,
             userId: userId
         };
-        dao = this.repository.create(dao);
+        let dao: RefreshTokenDAO = this.repository.create(newDao);
         dao = await this.repository.save(dao);
         return dao;
     }
