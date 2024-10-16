@@ -1,52 +1,33 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { RegisterUserDto, UserDto, UserId, UserSafeDto } from './types';
+import { RegisterUserDto, UserId } from './types';
+import { UserDAO } from './user.entity';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class UserService {
-    private users: UserDto[] = [
-        {
-            id: 0,
-            name: 'john',
-            password: 'changeme',
-            created: new Date().getUTCMilliseconds()
-          },
-          {
-            id: 1,
-            name: 'maria',
-            password: 'guess',
-            created: new Date().getUTCMilliseconds()
-          },
-    ];
+  constructor(
+    @InjectRepository(UserDAO)
+    private usersRepository: Repository<UserDAO>
+  ) {}
 
-    public async findByName(name: string): Promise<UserDto | undefined> {
-        return this.users.find(u => u.name === name);
+    public async findByName(name: string): Promise<UserDAO | undefined> {
+        return this.usersRepository.findOneBy({ name });
     }
 
-    public async getById(id: UserId): Promise<UserDto | undefined> {
-      return this.users.find(u => u.id === id);
+    public async findById(id: UserId): Promise<UserDAO | undefined> {
+      return this.usersRepository.findOneBy({ id });
     }
 
-    public async createUser(dto: RegisterUserDto): Promise<UserDto> {
+    public async createUser(dto: RegisterUserDto): Promise<UserDAO> {
       if (await this.findByName(dto.name)) {
         throw new BadRequestException('Username already exists');
       }
-      if (!this.validate(dto)) {
-        throw new BadRequestException('Bruh what is this user info??');
-      }
-      const newUser: UserDto = {
+      const newUser: Partial<UserDAO> = {
         ...dto,
-        created: new Date().getUTCMilliseconds(),
-        id: this.users.length
+        created: new Date()
       };
-      this.users.push(newUser);
-      return newUser;
-    }
-
-    validate(dto: RegisterUserDto): boolean {
-      // TODO replace with pipes!
-      // if (dto.name.trim.length < 4 || dto.name.includes(' ')) {
-      //   return false;
-      // }
-      return true;
+      const dao: UserDAO = this.usersRepository.create(newUser);
+      return this.usersRepository.save(dao);
     }
 }

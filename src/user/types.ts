@@ -1,16 +1,8 @@
-import { Timestamp } from "src/types/types";
+import { UserDAO } from "./user.entity";
 
 export type UserId = number;
 
-export class UserSafeDto {   
-    id: UserId;
-    name: string;
-    created: Timestamp;
-}
-
-export class UserDto extends UserSafeDto {
-    password: string;
-}
+export type UserDTO = Omit<UserDAO, 'password'>;
 
 export class RegisterUserDto {
     name: string;

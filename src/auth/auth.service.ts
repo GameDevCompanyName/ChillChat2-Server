@@ -1,58 +1,58 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { RegisterUserDto, UserDto, UserId, UserSafeDto } from 'src/user/types';
+import { RegisterUserDto, UserId } from 'src/user/types';
 import { UserService } from 'src/user/user.service';
 import { AccessJwtPayload, AuthResponse, RefreshToken } from './types';
 import { TokenService } from './token.service';
+import { UserDAO } from 'src/user/user.entity';
+import { RefreshTokenDAO } from './refreshToken.entity';
 
 @Injectable()
 export class AuthService {
+
   constructor(
     private userService: UserService,
     private jwtService: JwtService,
     private tokenService: TokenService
   ) {}
 
-  public async validateUser(username: string, pass: string): Promise<UserSafeDto | null> {
+  public async validateUser(username: string, pass: string): Promise<UserDAO | null> {
     const user = await this.userService.findByName(username);
     if (user && user.password === pass) {
-      const { password, ...result } = user;
-      return result;
+      return user;
     }
     return null;
   }
 
-  public async login(user: UserSafeDto): Promise<AuthResponse> {
-    const refreshToken: RefreshToken = this.tokenService.createToken(user.id);
+  public async login(user: UserDAO): Promise<AuthResponse> {
+    const tokenDao: RefreshTokenDAO = await this.tokenService.createToken(user.id);
     return {
-      refreshToken,
+      refreshToken: tokenDao.refreshToken,
       accessToken: this.jwtService.sign(this.createJwtPayload(user))
-    }
+    };
   }
 
   public async register(dto: RegisterUserDto): Promise<AuthResponse> {
-    const user: UserDto = await this.userService.createUser(dto);
+    const user: UserDAO = await this.userService.createUser(dto);
     return this.login(user);
   }
 
   public async refresh(oldToken: RefreshToken): Promise<AuthResponse> {
-    const {userId, refreshToken} = this.tokenService.refresh(oldToken);
-    const userById = await this.userService.getById(userId);
+    const tokenDao: RefreshTokenDAO = await this.tokenService.refresh(oldToken);
+    const userDao: UserDAO = await this.userService.findById(tokenDao.userId);
     return {
-      refreshToken,
-      accessToken: this.jwtService.sign(this.createJwtPayload(userById))
-    }
+      refreshToken: tokenDao.refreshToken,
+      accessToken: this.jwtService.sign(this.createJwtPayload(userDao))
+    };
   }
 
   public async forgetSession(userId: UserId): Promise<void> {
     this.tokenService.forget(userId);
   }
 
-  private createJwtPayload(user: UserSafeDto): AccessJwtPayload {
+  private createJwtPayload(user: UserDAO): AccessJwtPayload {
     return {
-      username: user.name,
-      sub: user.id,
-      created: user.created
+      sub: user.id
     };
   }
 

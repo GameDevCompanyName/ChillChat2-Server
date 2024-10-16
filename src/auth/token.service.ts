@@ -1,44 +1,51 @@
 import { ForbiddenException, Injectable } from "@nestjs/common";
 import { UserId } from "src/user/types";
 import { RefreshToken } from "./types";
+import { InjectRepository } from "@nestjs/typeorm";
+import { RefreshTokenDAO } from "./refreshToken.entity";
+import { Repository } from "typeorm";
 
 @Injectable()
 export class TokenService {
-    private tokenMap: Record<RefreshToken, UserId> = {};
+    
+    constructor(
+        @InjectRepository(RefreshTokenDAO)
+        private repository: Repository<RefreshTokenDAO>
+    ) { }
 
-    public createToken(userId: UserId): RefreshToken {
+    public async createToken(userId: UserId): Promise<RefreshTokenDAO> {
         this.forget(userId);
         const newToken = this.generateToken(userId);
-        this.tokenMap[newToken] = userId;
-        return newToken;
+        let dao: RefreshTokenDAO = {
+            refreshToken: newToken,
+            userId: userId
+        };
+        dao = this.repository.create(dao);
+        dao = await this.repository.save(dao);
+        return dao;
     }
 
-    public forget(userId: UserId): boolean {
-        const token = this.findTokenByUser(userId);
-        if (token) {
-            this.tokenMap[token] = undefined;
+    public async forget(userId: UserId): Promise<boolean> {
+        const dao: RefreshTokenDAO = await this.findTokenByUser(userId);
+        if (dao) {
+            this.repository.remove(dao);
             return true;
+        } else {
+            return false;
         }
-        return false;
     }
 
-    public refresh(oldToken: RefreshToken): {
-        userId: UserId,
-        refreshToken: RefreshToken
-    } {
-        const userId: UserId = this.tokenMap[oldToken];
-        if (!userId) {
+    public async refresh(oldToken: RefreshToken): Promise<RefreshTokenDAO> {
+        const dao: RefreshTokenDAO = await this.repository.findOneBy({ refreshToken: oldToken });
+        if (!dao) {
             throw new ForbiddenException('Refresh token is not valid');
         }
-        const newToken: RefreshToken = this.createToken(userId);
-        return {
-            userId: userId,
-            refreshToken: newToken
-        };
+        const newDao: RefreshTokenDAO = await this.createToken(dao.userId);
+        return newDao;
     }
 
-    private findTokenByUser(userId: UserId): RefreshToken | undefined {
-        return Object.keys(this.tokenMap).find(key => this.tokenMap[key] === userId);
+    private async findTokenByUser(userId: UserId): Promise<RefreshTokenDAO> {
+        return await this.repository.findOneBy({ userId });
     }
 
     private generateToken(userId: UserId): RefreshToken {
