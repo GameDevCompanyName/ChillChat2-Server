@@ -1,5 +1,11 @@
 import { UserSafeDto } from "src/user/types";
 
+export class AccessJwtPayload {
+    username: string;
+    sub: number;
+    created: number;
+}
+
 export type AccessToken = string;
 export type RefreshToken = string;
 
@@ -8,10 +14,6 @@ export class AuthResponse {
     refreshToken: RefreshToken;
 }
 
-export class LoginResponse extends AuthResponse {
-    user: UserSafeDto;
-}
-
-export class RefreshRequestDto {
+export class RefreshTokenRequestDto {
     refreshToken: RefreshToken;
 }
